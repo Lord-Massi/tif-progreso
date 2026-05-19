@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TIF — Progreso & Seguimiento</title>
+<style>
+  :root {
+    --verde:   #27ae60; --verde-bg: #eafaf1;
+    --azul:    #2980b9; --azul-bg:  #eaf4fb;
+    --naranja: #e67e22; --naranja-bg:#fef9e7;
+    --rojo:    #e74c3c; --rojo-bg:  #fdedec;
+    --gris:    #7f8c8d; --gris-bg:  #f2f3f4;
+    --dark:    #1a252f;
+    --border:  #dce1e7;
+    --shadow:  0 2px 12px rgba(0,0,0,.08);
+    --radius:  10px;
+  }
+  * { box-sizing: border-box; margin:0; padding:0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background:#f0f2f5; color:#2c3e50; font-size:14px; }
+
+  /* ── HEADER ── */
+  header { background: linear-gradient(135deg,#1a252f 0%,#2c3e50 100%); color:#fff; padding:28px 32px 22px; }
+  header .badge { display:inline-block; background:rgba(255,255,255,.15); border-radius:20px; padding:3px 12px; font-size:11px; letter-spacing:.5px; text-transform:uppercase; margin-bottom:10px; }
+  header h1 { font-size:19px; font-weight:700; line-height:1.4; max-width:700px; }
+  header p  { font-size:12px; color:rgba(255,255,255,.65); margin-top:6px; }
+  .meta-row { display:flex; gap:24px; margin-top:14px; flex-wrap:wrap; }
+  .meta-item { font-size:12px; color:rgba(255,255,255,.8); display:flex; align-items:center; gap:5px; }
+  .meta-item span.dot { width:8px; height:8px; border-radius:50%; background:#27ae60; display:inline-block; }
+
+  /* ── PROGRESS BAR ── */
+  .progress-wrap { background:#fff; padding:16px 32px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+  .progress-label { font-size:13px; font-weight:600; color:var(--dark); white-space:nowrap; }
+  .bar-outer { flex:1; min-width:200px; background:#e8ecef; border-radius:8px; height:12px; overflow:hidden; }
+  .bar-inner  { height:100%; background:linear-gradient(90deg,#27ae60,#2ecc71); border-radius:8px; transition:width .5s ease; }
+  .pct-label  { font-size:13px; font-weight:700; color:var(--verde); white-space:nowrap; }
+  .stat-chips { display:flex; gap:10px; flex-wrap:wrap; }
+  .chip { font-size:11px; font-weight:600; padding:4px 10px; border-radius:12px; }
+  .chip.done  { background:var(--verde-bg); color:var(--verde); }
+  .chip.prog  { background:var(--azul-bg);  color:var(--azul); }
+  .chip.pend  { background:var(--gris-bg);  color:var(--gris); }
+  .chip.gere  { background:var(--naranja-bg); color:var(--naranja); }
+
+  /* ── TABS ── */
+  .tabs { display:flex; gap:0; background:#fff; border-bottom:2px solid var(--border); padding:0 32px; position:sticky; top:0; z-index:100; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+  .tab-btn { padding:13px 22px; font-size:13px; font-weight:600; cursor:pointer; border:none; background:none; color:var(--gris); border-bottom:3px solid transparent; margin-bottom:-2px; transition:all .2s; display:flex; align-items:center; gap:6px; }
+  .tab-btn:hover  { color:var(--azul); }
+  .tab-btn.active { color:var(--azul); border-bottom-color:var(--azul); }
+
+  /* ── PANELS ── */
+  .panel { display:none; padding:28px 32px; max-width:1100px; margin:0 auto; }
+  .panel.active { display:block; }
+
+  /* ── PHASE CARDS ── */
+  .phase-card { background:#fff; border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:20px; overflow:hidden; }
+  .phase-header { display:flex; align-items:center; gap:12px; padding:14px 18px; cursor:pointer; border-left:5px solid var(--border); transition:background .15s; user-select:none; }
+  .phase-header:hover { background:#f8f9fa; }
+  .phase-header.done-phase   { border-left-color:var(--verde); }
+  .phase-header.prog-phase   { border-left-color:var(--azul); }
+  .phase-header.pend-phase   { border-left-color:var(--gris); }
+  .phase-header.gere-phase   { border-left-color:var(--naranja); }
+  .phase-icon  { font-size:20px; }
+  .phase-title { flex:1; font-size:15px; font-weight:700; }
+  .phase-badge { font-size:11px; font-weight:600; padding:3px 10px; border-radius:10px; }
+  .badge-done  { background:var(--verde-bg); color:var(--verde); }
+  .badge-prog  { background:var(--azul-bg);  color:var(--azul); }
+  .badge-pend  { background:var(--gris-bg);  color:var(--gris); }
+  .badge-gere  { background:var(--naranja-bg); color:var(--naranja); }
+  .phase-mini  { font-size:12px; color:var(--gris); }
+  .chevron     { font-size:12px; color:var(--gris); transition:transform .25s; }
+  .phase-header.open .chevron { transform:rotate(180deg); }
+
+  .task-list { display:none; padding:6px 0 12px 0; border-top:1px solid #f0f2f4; }
+  .task-list.open { display:block; }
+  .task-item { display:flex; align-items:flex-start; gap:12px; padding:9px 20px 9px 28px; transition:background .12s; }
+  .task-item:hover { background:#fafbfc; }
+  .task-item input[type=checkbox] { margin-top:2px; accent-color:var(--verde); width:15px; height:15px; cursor:pointer; flex-shrink:0; }
+  .task-text { flex:1; }
+  .task-title { font-size:13px; line-height:1.4; }
+  .task-note  { font-size:11px; color:var(--gris); margin-top:2px; }
+  .task-item.completed .task-title { text-decoration:line-through; color:#aaa; }
+  .task-tag   { font-size:10px; padding:2px 7px; border-radius:8px; font-weight:600; white-space:nowrap; flex-shrink:0; margin-top:2px; }
+  .tag-done   { background:var(--verde-bg); color:var(--verde); }
+  .tag-prog   { background:var(--azul-bg);  color:var(--azul); }
+  .tag-pend   { background:var(--gris-bg);  color:var(--gris); }
+  .tag-gere   { background:var(--naranja-bg); color:var(--naranja); }
+
+  /* ── CALENDAR ── */
+  .cal-section h2 { font-size:15px; font-weight:700; margin-bottom:16px; color:var(--dark); border-left:4px solid var(--azul); padding-left:10px; }
+  .timeline { position:relative; padding-left:32px; }
+  .timeline::before { content:''; position:absolute; left:10px; top:0; bottom:0; width:2px; background:var(--border); }
+  .tl-item { position:relative; margin-bottom:18px; }
+  .tl-dot  { position:absolute; left:-26px; top:4px; width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 2px var(--border); }
+  .tl-dot.done    { background:var(--verde); box-shadow:0 0 0 2px var(--verde); }
+  .tl-dot.prog    { background:var(--azul);  box-shadow:0 0 0 2px var(--azul); }
+  .tl-dot.pend    { background:#bdc3c7; }
+  .tl-dot.gere    { background:var(--naranja); box-shadow:0 0 0 2px var(--naranja); }
+  .tl-dot.warn    { background:var(--rojo); box-shadow:0 0 0 2px var(--rojo); }
+  .tl-card { background:#fff; border-radius:var(--radius); padding:12px 16px; box-shadow:var(--shadow); border-left:4px solid var(--border); }
+  .tl-card.done { border-left-color:var(--verde); }
+  .tl-card.prog { border-left-color:var(--azul); }
+  .tl-card.gere { border-left-color:var(--naranja); }
+  .tl-card.warn { border-left-color:var(--rojo); }
+  .tl-date  { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris); margin-bottom:4px; }
+  .tl-title { font-size:13px; font-weight:600; }
+  .tl-desc  { font-size:12px; color:var(--gris); margin-top:3px; line-height:1.5; }
+  .tl-tags  { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .tl-tag   { font-size:10px; padding:2px 8px; border-radius:8px; font-weight:600; }
+  .tl-tag.deadline { background:var(--rojo-bg); color:var(--rojo); }
+  .tl-tag.entregable { background:var(--azul-bg); color:var(--azul); }
+  .tl-tag.reunion { background:#f5eef8; color:#8e44ad; }
+  .tl-tag.congreso { background:var(--naranja-bg); color:var(--naranja); }
+  .tl-tag.completado { background:var(--verde-bg); color:var(--verde); }
+
+  /* ── COMMENTS ── */
+  .comment-form { background:#fff; border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); margin-bottom:24px; }
+  .comment-form h3 { font-size:14px; font-weight:700; margin-bottom:14px; }
+  .form-row { display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+  .form-row select, .form-row input { padding:8px 12px; border:1.5px solid var(--border); border-radius:7px; font-size:13px; color:var(--dark); outline:none; }
+  .form-row select:focus, .form-row input:focus { border-color:var(--azul); }
+  .comment-form textarea { width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:7px; font-size:13px; resize:vertical; min-height:80px; color:var(--dark); outline:none; font-family:inherit; }
+  .comment-form textarea:focus { border-color:var(--azul); }
+  .btn-add { background:var(--azul); color:#fff; border:none; padding:9px 20px; border-radius:7px; font-size:13px; font-weight:600; cursor:pointer; margin-top:10px; transition:background .2s; }
+  .btn-add:hover { background:#2471a3; }
+
+  .comments-list h3 { font-size:14px; font-weight:700; margin-bottom:14px; color:var(--dark); border-left:4px solid #8e44ad; padding-left:10px; }
+  .comment-card { background:#fff; border-radius:var(--radius); padding:14px 18px; box-shadow:var(--shadow); margin-bottom:12px; border-left:4px solid var(--border); animation:slideIn .3s ease; }
+  @keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
+  .comment-card.maxi { border-left-color:var(--azul); }
+  .comment-card.jose { border-left-color:#8e44ad; }
+  .comment-card.claude { border-left-color:var(--naranja); }
+  .comment-header { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .avatar { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; flex-shrink:0; }
+  .av-maxi { background:var(--azul); }
+  .av-jose { background:#8e44ad; }
+  .av-claude { background:var(--naranja); }
+  .comment-author { font-size:13px; font-weight:700; }
+  .comment-time   { font-size:11px; color:var(--gris); margin-left:auto; }
+  .comment-tag-label { font-size:10px; padding:2px 8px; border-radius:8px; font-weight:600; background:#f5eef8; color:#8e44ad; }
+  .comment-body { font-size:13px; line-height:1.6; color:#2c3e50; }
+  .comment-ref  { font-size:11px; color:var(--gris); margin-top:5px; font-style:italic; }
+  .btn-del { background:none; border:none; cursor:pointer; color:#ccc; font-size:16px; padding:0 4px; margin-left:6px; transition:color .2s; }
+  .btn-del:hover { color:var(--rojo); }
+  .empty-comments { text-align:center; padding:40px; color:var(--gris); font-size:13px; }
+  .empty-comments span { font-size:36px; display:block; margin-bottom:10px; }
+
+  /* ── MISC ── */
+  .section-title { font-size:15px; font-weight:700; margin:0 0 18px; color:var(--dark); border-left:4px solid var(--azul); padding-left:10px; }
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media(max-width:700px) { .two-col{grid-template-columns:1fr} .panel{padding:16px} header{padding:20px 16px} }
+  .result-box { background:var(--azul-bg); border-radius:var(--radius); padding:14px 18px; margin-bottom:20px; border-left:4px solid var(--azul); }
+  .result-box h4 { font-size:13px; font-weight:700; color:var(--azul); margin-bottom:8px; }
+  .result-box ul { list-style:none; }
+  .result-box li { font-size:12px; padding:2px 0; color:var(--dark); }
+  .result-box li::before { content:'▶ '; color:var(--azul); font-size:10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="badge">TIF — UNSI · Gestión Ambiental · 2026</div>
+  <h1>Estimación Espacial de Emisiones Entéricas de CH₄ de Bovinos<br>Región Pampeana Bonaerense — 2021</h1>
+  <div class="meta-row">
+    <span class="meta-item"><span class="dot"></span> Autor: Maximiliano G. Marcellini</span>
+    <span class="meta-item">🎓 Director: José Ignacio Gere</span>
+    <span class="meta-item">🏛 UNSI — Raúl Scalabrini Ortiz</span>
+    <span class="meta-item">📅 Actualizado: <span id="lastUpdate">—</span></span>
+  </div>
+</header>
+
+<div class="progress-wrap">
+  <span class="progress-label">Progreso general</span>
+  <div class="bar-outer"><div class="bar-inner" id="mainBar" style="width:0%"></div></div>
+  <span class="pct-label" id="pctLabel">0%</span>
+  <div class="stat-chips">
+    <span class="chip done" id="chipDone">✅ 0 completadas</span>
+    <span class="chip prog" id="chipProg">🔵 0 en progreso</span>
+    <span class="chip pend" id="chipPend">⚪ 0 pendientes</span>
+    <span class="chip gere" id="chipGere">⏳ 0 esperando a Gere</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('progreso',this)">📋 Progreso</button>
+  <button class="tab-btn" onclick="showTab('calendario',this)">📅 Calendario</button>
+  <button class="tab-btn" onclick="showTab('resultados',this)">📊 Resultados</button>
+  <button class="tab-btn" onclick="showTab('comentarios',this)">💬 Comentarios</button>
+</div>
+
+<!-- ══════════════════ PANEL PROGRESO ══════════════════ -->
+<div id="tab-progreso" class="panel active">
+  <p class="section-title">Tareas por fase</p>
+
+  <!-- FASE 1 -->
+  <div class="phase-card" id="phase1">
+    <div class="phase-header done-phase" onclick="togglePhase('phase1')">
+      <span class="phase-icon">🛰️</span>
+      <span class="phase-title">Fase 1 — Datos y Pipeline Satelital / Ganadero</span>
+      <span class="phase-badge badge-done">Completado</span>
+      <span class="phase-mini" id="mini1"></span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="task-list" id="list1">
+      <div class="task-item" data-id="t1_1" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">Descarga TROPOMI+GOSAT Blended (~470 archivos NetCDF, 2021)</div><div class="task-note">Bucket AWS S3: blended-tropomi-gosat-methane · us-west-2 · acceso público</div></div><span class="task-tag tag-done">✅ Listo</span></div>
+      <div class="task-item" data-id="t1_2" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">Script calcular_xch4_por_partido.py ejecutado correctamente</div><div class="task-note">Recorte espacial a región pampeana bonaerense · ~995.300 observaciones válidas</div></div><span class="task-tag tag-done">✅ Listo</span></div>
+      <div class="task-item" data-id="t1_3" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">xch4_por_partido_2021.csv generado — XCH4 promedio por partido</div><div class="task-note">131 partidos · XCH4 promedio regional: 1814,6 ppb · rango: 1801,8–1839,2 ppb</div></div><span class="task-tag tag-done">✅ Listo</span></div>
+      <div class="task-item" data-id="t1_4" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">Shapefile XCH4 por partido generado</div><div class="task-note">xch4_por_partido_2021.shp — listo para QGIS</div></div><span class="task-tag tag-done">✅ Listo</span></div>
+      <div class="task-item" data-id="t1_5" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">Datos_Bovinos_Bs_As_Combinados.xlsx armado</div><div class="task-note">SENASA 2021 + CNA 2018 · 135 partidos · 29 estaciones SMN integradas · stock total: 20.113.909 cab.</div></div><span class="task-tag tag-done">✅ Listo</span></div>
+      <div class="task-item" data-id="t1_6" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">Cálculo Tier 1 provisional — emisiones por partido</div><div class="task-note">Factor: 57 kg CH₄/cab/año (IPCC 2006, Tabla 10.10) · Total: 1.146.493 t CH₄/año · 28.662.320 t CO₂eq/año</div></div><span class="task-tag tag-done">✅ Listo</span></div>
+      <div class="task-item" data-id="t1_7" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">Merge XCH4 satelital + Emisiones Tier 1 (131 partidos)</div><div class="task-note">emisiones_tier1_xch4_merged.csv · corrección de nombre "Coronel de Marina Leonardo Rosales"</div></div><span class="task-tag tag-done">✅ Listo</span></div>
+      <div class="task-item" data-id="t1_8" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">Scatter plot XCH4 vs Emisiones Tier 1 generado</div><div class="task-note">r = −0,58 · r² = 0,34 · p = 2,6×10⁻¹³ · n = 131 partidos · correlación negativa explicada por fuentes urbanas</div></div><span class="task-tag tag-done">✅ Listo</span></div>
+      <div class="task-item" data-id="t1_9" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">Mapas coropléticos XCH4 y Tier 1 generados</div><div class="task-note">side-by-side · paleta YlOrRd (XCH4) y Blues (Tier 1) · exportados PNG 180 dpi</div></div><span class="task-tag tag-done">✅ Listo</span></div>
+    </div>
+  </div>
+
+  <!-- FASE 2 -->
+  <div class="phase-card" id="phase2">
+    <div class="phase-header prog-phase" onclick="togglePhase('phase2')">
+      <span class="phase-icon">🏆</span>
+      <span class="phase-title">Fase 2 — Congreso SAPROCEA</span>
+      <span class="phase-badge badge-prog">En progreso</span>
+      <span class="phase-mini" id="mini2"></span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="task-list" id="list2">
+      <div class="task-item" data-id="t2_1" data-phase="prog"><input type="checkbox"><div class="task-text"><div class="task-title">Redactar abstract SAPROCEA (~4000 palabras / 3 pp)</div><div class="task-note">Eje temático: "Agro Sustentable" · Se puede presentar como trabajo en desarrollo · usar resultados Tier 1 + XCH4</div></div><span class="task-tag tag-prog">🔵 En progreso</span></div>
+      <div class="task-item" data-id="t2_2" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Revisar formato y requisitos formales SAPROCEA</div><div class="task-note">Formato Word + PDF · Extensión: 4000 palabras o 3 pp · Solo primera institución · Solo primer autor como presentador</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t2_3" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Someter abstract al congreso SAPROCEA</div><div class="task-note">Institución: UNSI · Eje: Agro Sustentable</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+    </div>
+  </div>
+
+  <!-- FASE 3 -->
+  <div class="phase-card" id="phase3">
+    <div class="phase-header prog-phase" onclick="togglePhase('phase3')">
+      <span class="phase-icon">📝</span>
+      <span class="phase-title">Fase 3 — Plan de Tesis Formal</span>
+      <span class="phase-badge badge-prog">En progreso</span>
+      <span class="phase-mini" id="mini3"></span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="task-list" id="list3">
+      <div class="task-item" data-id="t3_1" data-phase="prog"><input type="checkbox"><div class="task-text"><div class="task-title">Redactar borrador plan de trabajo (estructura tri-metodológica)</div><div class="task-note">Con base en lo acordado con Gere el 11/05/2026 · Comparación Tier 1 / Tier 2 / Kriging-IDW</div></div><span class="task-tag tag-prog">🔵 En progreso</span></div>
+      <div class="task-item" data-id="t3_2" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Gere redacta y firma el Plan de Trabajo</div><div class="task-note">"Un plan lo escribo en tres horas" (Gere, 11/05/2026) · Necesita insumos del punto anterior</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t3_3" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Presentar plan formal ante el Departamento</div><div class="task-note">Fecha límite: Junio–Julio 2026 · Riesgo: si no se presenta, te pasan para el año siguiente</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+    </div>
+  </div>
+
+  <!-- FASE 4 -->
+  <div class="phase-card" id="phase4">
+    <div class="phase-header gere-phase" onclick="togglePhase('phase4')">
+      <span class="phase-icon">⏳</span>
+      <span class="phase-title">Fase 4 — Datos de Gere (Tier 2 + Empíricos)</span>
+      <span class="phase-badge badge-gere">Esperando a Gere</span>
+      <span class="phase-mini" id="mini4"></span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="task-list" id="list4">
+      <div class="task-item" data-id="t4_1" data-phase="gere"><input type="checkbox"><div class="task-text"><div class="task-title">Recibir parámetros Tier 2 de Gere</div><div class="task-note">GE (MJ/día) y Ym (%) por región/calidad de pastura · Fórmula: EF = (GE × Ym / 55,65) × 365 · Aprobado en reunión 11/05/2026</div></div><span class="task-tag tag-gere">⏳ Gere</span></div>
+      <div class="task-item" data-id="t4_2" data-phase="gere"><input type="checkbox"><div class="task-text"><div class="task-title">Recibir listado de partidos con mediciones empíricas</div><div class="task-note">Gere tiene datos propios de ~10 partidos (kg CH₄/cab/año por categoría) · Va a enviar un "listadito"</div></div><span class="task-tag tag-gere">⏳ Gere</span></div>
+      <div class="task-item" data-id="t4_3" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Calcular emisiones Tier 2 por partido</div><div class="task-note">Reemplazar factor 57 provisional en Excel v2 · Diferenciar por categoría animal y calidad de pastura</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t4_4" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Cargar mediciones empíricas en QGIS como puntos</div><div class="task-note">Partidos de Gere con datos medidos → puntos georeferenciados en shapefile</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t4_5" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Interpolación Kriging / IDW en QGIS</div><div class="task-note">Procesamiento → Interpolación → IDW · Partidos sin medición → estimados por proximidad espacial</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+    </div>
+  </div>
+
+  <!-- FASE 5 -->
+  <div class="phase-card" id="phase5">
+    <div class="phase-header pend-phase" onclick="togglePhase('phase5')">
+      <span class="phase-icon">🗺️</span>
+      <span class="phase-title">Fase 5 — QGIS y Mapas Finales</span>
+      <span class="phase-badge badge-pend">Pendiente</span>
+      <span class="phase-mini" id="mini5"></span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="task-list" id="list5">
+      <div class="task-item" data-id="t5_1" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Merge QGIS: shapefile IGN + CSV XCH4 + CSV emisiones</div><div class="task-note">Join por nombre de partido · Capa unificada para todos los mapas</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t5_2" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Mapa coroplético XCH4 final (QGIS)</div><div class="task-note">Simbología Graduada · campo xch4_mean · paleta YlOrRd · exportar imagen alta resolución</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t5_3" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Mapa coroplético Tier 1 final (QGIS)</div><div class="task-note">Comparar visualmente con mapa XCH4 · misma escala geográfica</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t5_4" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Mapa coroplético Tier 2 (QGIS)</div><div class="task-note">Requiere datos de Gere primero</div></div><span class="task-tag tag-gere">⏳ Gere</span></div>
+      <div class="task-item" data-id="t5_5" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Mapa Kriging / IDW — capa empírica interpolada (QGIS)</div><div class="task-note">Requiere listado de Gere · resultado: superficie continua de emisiones interpoladas</div></div><span class="task-tag tag-gere">⏳ Gere</span></div>
+      <div class="task-item" data-id="t5_6" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Integrar datos climáticos SMN adicionales (12 estaciones)</div><div class="task-note">Normas climatológicas pendientes de integración al análisis</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+    </div>
+  </div>
+
+  <!-- FASE 6 -->
+  <div class="phase-card" id="phase6">
+    <div class="phase-header pend-phase" onclick="togglePhase('phase6')">
+      <span class="phase-icon">📊</span>
+      <span class="phase-title">Fase 6 — Análisis Estadístico Comparativo</span>
+      <span class="phase-badge badge-pend">Pendiente</span>
+      <span class="phase-mini" id="mini6"></span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="task-list" id="list6">
+      <div class="task-item" data-id="t6_1" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">Análisis correlación XCH4 vs Tier 1 (r = −0,58)</div><div class="task-note">Pearson r = −0,5835 · r² = 0,3404 · p = 2,6×10⁻¹³ · correlación negativa por fuentes no ganaderas en AMBA</div></div><span class="task-tag tag-done">✅ Listo</span></div>
+      <div class="task-item" data-id="t6_2" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Análisis correlación XCH4 vs Tier 2</div><div class="task-note">Requiere datos de Gere</div></div><span class="task-tag tag-gere">⏳ Gere</span></div>
+      <div class="task-item" data-id="t6_3" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Análisis correlación XCH4 vs Kriging-IDW</div><div class="task-note">Requiere datos de Gere + interpolación</div></div><span class="task-tag tag-gere">⏳ Gere</span></div>
+      <div class="task-item" data-id="t6_4" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Comparación tri-metodológica (Tier 1 vs Tier 2 vs Kriging)</div><div class="task-note">Aporte científico original del TIF · mapas comparativos + estadística + narrativa</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+    </div>
+  </div>
+
+  <!-- FASE 7 -->
+  <div class="phase-card" id="phase7">
+    <div class="phase-header pend-phase" onclick="togglePhase('phase7')">
+      <span class="phase-icon">✍️</span>
+      <span class="phase-title">Fase 7 — Redacción del TIF (formato paper)</span>
+      <span class="phase-badge badge-pend">Pendiente</span>
+      <span class="phase-mini" id="mini7"></span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="task-list" id="list7">
+      <div class="task-item" data-id="t7_1" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Carátula (según requisitos UNSI)</div><div class="task-note">Institución + título + autor + Nº registro + mail + director + lugar y año</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t7_2" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Resumen / Abstract (150–300 palabras) + 5 palabras clave</div><div class="task-note">Ítem obligatorio: tema, objetivo, marco teórico, metodología, resultados anticipados, conclusiones</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t7_3" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Introducción</div><div class="task-note">Problema, pregunta de investigación, hipótesis, objetivos, variables, metodología, organización del escrito</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t7_4" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Marco Teórico</div><div class="task-note">Emisiones ganaderas CH₄ · metodologías IPCC Tier 1/2 · SIG aplicados a gestión ambiental · bibliografía APA</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t7_5" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Materiales y Métodos</div><div class="task-note">Fuentes de datos (SENASA, CNA, TROPOMI+GOSAT, SMN) · pipeline Python · QGIS · factores de emisión IPCC</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t7_6" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Resultados</div><div class="task-note">Mapas coropléticos · tablas de emisiones por partido · scatter plot XCH4 vs bottom-up · comparación tri-metodológica</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t7_7" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Discusión</div><div class="task-note">Heterogeneidad territorial · limitaciones del modelo · comparación con inventarios nacionales · rol de fuentes no ganaderas</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t7_8" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Conclusiones + Bibliografía (normas APA)</div><div class="task-note">Respuesta a la pregunta de investigación · aportes del enfoque espacial · líneas de investigación futura</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t7_9" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Revisiones con el director (Gere)</div><div class="task-note">Sep–Oct 2026 según cronograma · min 5000 palabras, max 15000 palabras</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+    </div>
+  </div>
+
+  <!-- FASE 8 -->
+  <div class="phase-card" id="phase8">
+    <div class="phase-header pend-phase" onclick="togglePhase('phase8')">
+      <span class="phase-icon">🎓</span>
+      <span class="phase-title">Fase 8 — Entrega Final y Presentación Oral</span>
+      <span class="phase-badge badge-pend">Pendiente</span>
+      <span class="phase-mini" id="mini8"></span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="task-list" id="list8">
+      <div class="task-item" data-id="t8_1" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Entrega escrito al tribunal</div><div class="task-note">Formato PDF · Noviembre 2026 · Hoja A4, TNR 12, interlineado 1½</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t8_2" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Obtención de aval del tribunal</div><div class="task-note">El tribunal tiene 1 mes corrido a partir de la designación para otorgar aval</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t8_3" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Presentación oral ante el tribunal</div><div class="task-note">Exposición + preguntas + deliberación secreta + nota final leída a viva voz</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+    </div>
+  </div>
+</div><!-- /panel progreso -->
+
+<!-- ══════════════════ PANEL CALENDARIO ══════════════════ -->
+<div id="tab-calendario" class="panel">
+  <p class="section-title">Línea de tiempo — Hitos clave</p>
+  <div class="timeline">
+
+    <div class="tl-item">
+      <div class="tl-dot done"></div>
+      <div class="tl-card done">
+        <div class="tl-date">Abril 2026</div>
+        <div class="tl-title">🔀 Pivote metodológico — instrucción de Gere (24/04/2026)</div>
+        <div class="tl-desc">El TIF pivotó de análisis cualitativo comparativo a diseño cuantitativo-espacial. Nueva pregunta de investigación: correlación XCH4 satelital vs. estimaciones IPCC Tier 1/2 en 135 partidos bonaerenses.</div>
+        <div class="tl-tags"><span class="tl-tag completado">✅ Completado</span><span class="tl-tag reunion">Reunión con Gere</span></div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot done"></div>
+      <div class="tl-card done">
+        <div class="tl-date">Mayo 2026</div>
+        <div class="tl-title">📡 Pipeline de datos completado — Reunión Gere 11/05/2026</div>
+        <div class="tl-desc">Se completó la descarga y procesamiento de TROPOMI+GOSAT, los cálculos Tier 1, el merge y los primeros mapas y scatter plot. Se aprobó la metodología tri-comparativa (Tier 1 / Tier 2 / Kriging-IDW).</div>
+        <div class="tl-tags"><span class="tl-tag completado">✅ Completado</span><span class="tl-tag reunion">Reunión con Gere</span></div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot prog"></div>
+      <div class="tl-card prog">
+        <div class="tl-date">Mayo – Junio 2026</div>
+        <div class="tl-title">📝 Abstract SAPROCEA + Plan de tesis formal</div>
+        <div class="tl-desc">Redactar abstract (~4000 palabras) para el congreso SAPROCEA (eje Agro Sustentable). Paralelamente: borrador del plan de trabajo para presentar ante el Departamento en junio.</div>
+        <div class="tl-tags"><span class="tl-tag entregable">Entregable</span><span class="tl-tag congreso">SAPROCEA</span></div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot warn"></div>
+      <div class="tl-card warn">
+        <div class="tl-date">Junio – Julio 2026 ⚠️ DEADLINE</div>
+        <div class="tl-title">🏛 Presentación Plan de Trabajo ante el Departamento</div>
+        <div class="tl-desc">Si no se presenta en esta ventana, el Departamento lo pasa para el año siguiente. Requiere firma del director Gere. El plan debe incluir la estructura tri-metodológica aprobada.</div>
+        <div class="tl-tags"><span class="tl-tag deadline">⚠️ Deadline crítico</span><span class="tl-tag entregable">Entregable</span></div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot gere"></div>
+      <div class="tl-card gere">
+        <div class="tl-date">Junio 2026 (a confirmar)</div>
+        <div class="tl-title">⏳ Recibir datos de Gere (Tier 2 + listado partidos empíricos)</div>
+        <div class="tl-desc">Gere tiene que enviar: (1) parámetros Tier 2 (GE y Ym por región), (2) listado de partidos donde tiene mediciones propias de CH₄. Estos datos desbloquean las Fases 4, 5 y 6.</div>
+        <div class="tl-tags"><span class="tl-tag congreso">⏳ Esperando a Gere</span></div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot pend"></div>
+      <div class="tl-card">
+        <div class="tl-date">Julio – Agosto 2026</div>
+        <div class="tl-title">🗺️ Procesamiento espacial QGIS + análisis completo</div>
+        <div class="tl-desc">Merge QGIS definitivo. Mapas coropléticos Tier 1, Tier 2 y Kriging. Interpolación espacial IDW/Kriging sobre datos empíricos de Gere. Análisis estadístico tri-comparativo.</div>
+        <div class="tl-tags"><span class="tl-tag entregable">Entregable</span></div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot pend"></div>
+      <div class="tl-card">
+        <div class="tl-date">Septiembre – Octubre 2026</div>
+        <div class="tl-title">✍️ Redacción del TIF completo (formato paper)</div>
+        <div class="tl-desc">Redacción de todos los capítulos (5000–15000 palabras). Revisiones con Gere. Normas APA. Cuadros y gráficos numerados con fuentes. Formato final: hoja A4, TNR 12, interlineado 1½.</div>
+        <div class="tl-tags"><span class="tl-tag entregable">Entregable</span><span class="tl-tag reunion">Revisiones con Gere</span></div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot warn"></div>
+      <div class="tl-card warn">
+        <div class="tl-date">Noviembre 2026 ⚠️ DEADLINE FINAL</div>
+        <div class="tl-title">🎓 Entrega final del TIF + corrección</div>
+        <div class="tl-desc">Entrega del escrito completo en formato PDF al tribunal designado por el Departamento. El tribunal tiene 1 mes para otorgar aval. Sin aval → revisión y re-presentación.</div>
+        <div class="tl-tags"><span class="tl-tag deadline">⚠️ Deadline final</span><span class="tl-tag entregable">Entregable</span></div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot pend"></div>
+      <div class="tl-card">
+        <div class="tl-date">Noviembre – Diciembre 2026</div>
+        <div class="tl-title">🎤 Presentación oral ante el tribunal</div>
+        <div class="tl-desc">Exposición oral + preguntas del tribunal + deliberación en secreto + lectura del acta con nota final. Puede asistir público. Nota adjudicada es la del TIF completo.</div>
+        <div class="tl-tags"><span class="tl-tag deadline">Hito final</span></div>
+      </div>
+    </div>
+
+  </div>
+</div><!-- /panel calendario -->
+
+<!-- ══════════════════ PANEL RESULTADOS ══════════════════ -->
+<div id="tab-resultados" class="panel">
+  <p class="section-title">Resultados disponibles a la fecha</p>
+  <div class="two-col">
+    <div class="result-box">
+      <h4>📡 Datos satelitales TROPOMI+GOSAT</h4>
+      <ul>
+        <li>Dataset: Balasus et al. (2023) · Blended TROPOMI+GOSAT</li>
+        <li>Año: 2021 · ~470 archivos NetCDF procesados</li>
+        <li>Observaciones válidas: ~995.300</li>
+        <li>Promedio regional XCH4: <strong>1814,6 ppb</strong></li>
+        <li>Rango: 1801,8 (Villarino) – 1839,2 ppb (Gral. San Martín)</li>
+        <li>Partidos con datos: <strong>131 de 135</strong></li>
+      </ul>
+    </div>
+    <div class="result-box">
+      <h4>🐄 Estimaciones Tier 1 — IPCC 2006</h4>
+      <ul>
+        <li>Factor: 57 kg CH₄/cab/año (Tabla 10.10) — <em>provisorio</em></li>
+        <li>Stock total regional: <strong>20.113.909 cab.</strong></li>
+        <li>Emisión total: <strong>1.146.493 t CH₄/año</strong></li>
+        <li>CO₂eq total: <strong>28.662.320 t CO₂eq/año</strong></li>
+        <li>Mayor emisor: Ayacucho (47.580 t CH₄/año)</li>
+        <li>Fuentes: SENASA 2021 + CNA 2018</li>
+      </ul>
+    </div>
+  </div>
+  <div class="result-box" style="border-left-color:var(--rojo); background:var(--rojo-bg);">
+    <h4 style="color:var(--rojo);">📊 Hallazgo clave — Correlación XCH4 vs Tier 1</h4>
+    <ul>
+      <li><strong>r = −0,5835 · r² = 0,3404 · p = 2,6×10⁻¹³ · n = 131 partidos</strong></li>
+      <li>Correlación negativa: partidos con más ganado → XCH4 satelital más bajo</li>
+      <li>Explicación: XCH4 alto en AMBA por fuentes no ganaderas (basurales, gas, industria)</li>
+      <li>Partido mayor XCH4: Gral. San Martín (1839,2 ppb) — partido urbano/industrial</li>
+      <li>Esto justifica la metodología tri-comparativa como aporte científico original</li>
+    </ul>
+  </div>
+  <div class="result-box" style="border-left-color:var(--verde); background:var(--verde-bg);">
+    <h4 style="color:var(--verde);">🗺️ Archivos de salida disponibles</h4>
+    <ul>
+      <li>emisiones_tier1_xch4_merged.csv — merge 131 partidos</li>
+      <li>scatter_xch4_vs_tier1.png — con línea de tendencia, r², etiquetas</li>
+      <li>mapas_xch4_tier1.png — coropléticos side-by-side (180 dpi)</li>
+      <li>Datos_Bovinos_Bs_As_Combinados.xlsx — plantilla lista para Tier 2</li>
+    </ul>
+  </div>
+  <div class="result-box" style="border-left-color:#8e44ad; background:#f5eef8;">
+    <h4 style="color:#8e44ad;">📚 Bibliografía confirmada</h4>
+    <ul>
+      <li>Balasus et al. (2023) — AMT · Confirmado por Dr. Balasus (Harvard) por email</li>
+      <li>Huarte et al. (2010) — Atmos. Environment · Antecedente directo TROPOMI + Pampas</li>
+      <li>IPCC (2006) Vol.4 Cap.10 — Tier 1 Tabla 10.10 · Tier 2 Tablas 10.4/10.11</li>
+      <li>IPCC (2019) — Refinamiento directrices 2006</li>
+      <li>IGN — Shapefile departamentos/partidos Buenos Aires</li>
+      <li>SENASA (2021) · CNA INDEC (2018) · SMN — datos abiertos</li>
+    </ul>
+  </div>
+</div><!-- /panel resultados -->
+
+<!-- ══════════════════ PANEL COMENTARIOS ══════════════════ -->
+<div id="tab-comentarios" class="panel">
+  <div class="comment-form">
+    <h3>💬 Agregar comentario / nota de sesión</h3>
+    <div class="form-row">
+      <select id="cmtAuthor">
+        <option value="maxi">👤 Maxi</option>
+        <option value="jose">🎓 José Gere</option>
+        <option value="claude">🤖 Claude</option>
+      </select>
+      <input type="text" id="cmtRef" placeholder="Referencia (ej: Reunión 11/05, Fase 2, SAPROCEA...)" style="flex:1;min-width:180px;">
+    </div>
+    <textarea id="cmtText" placeholder="Escribí tu comentario, decisión, acuerdo, o recordatorio acá..."></textarea>
+    <button class="btn-add" onclick="addComment()">➕ Agregar comentario</button>
+  </div>
+  <div class="comments-list">
+    <h3>Historial de notas y comentarios</h3>
+    <div id="commentsList"></div>
+  </div>
+</div><!-- /panel comentarios -->
+
+<script>
+// ────────────────────────────────────────────
+//  STORAGE HELPERS
+// ────────────────────────────────────────────
+const LS = {
+  get: k => { try{ return JSON.parse(localStorage.getItem(k)) }catch{return null} },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v))
+};
+const KEY_TASKS    = 'tif_tasks_v2';
+const KEY_COMMENTS = 'tif_comments_v2';
+
+// ────────────────────────────────────────────
+//  TASKS
+// ────────────────────────────────────────────
+function getDefaultTasks() {
+  // { id: checked }
+  const defaults = {};
+  document.querySelectorAll('.task-item').forEach(item => {
+    const id = item.dataset.id;
+    const ph = item.dataset.phase;
+    defaults[id] = (ph === 'done');
+  });
+  return defaults;
+}
+
+function loadTasks() {
+  let saved = LS.get(KEY_TASKS) || {};
+  document.querySelectorAll('.task-item').forEach(item => {
+    const id = item.dataset.id;
+    const ph = item.dataset.phase;
+    const cb = item.querySelector('input[type=checkbox]');
+    // default checked if phase=done
+    if (saved[id] !== undefined) {
+      cb.checked = saved[id];
+    } else {
+      cb.checked = (ph === 'done');
+    }
+    updateTaskStyle(item, cb.checked);
+    cb.addEventListener('change', () => {
+      const all = LS.get(KEY_TASKS) || {};
+      all[id] = cb.checked;
+      LS.set(KEY_TASKS, all);
+      updateTaskStyle(item, cb.checked);
+      updateStats();
+      LS.set('tif_lastupdate', new Date().toLocaleDateString('es-AR'));
+      document.getElementById('lastUpdate').textContent = new Date().toLocaleDateString('es-AR');
+    });
+  });
+  updateStats();
+}
+
+function updateTaskStyle(item, checked) {
+  if (checked) item.classList.add('completed');
+  else item.classList.remove('completed');
+}
+
+function updateStats() {
+  let done=0, prog=0, pend=0, gere=0, total=0;
+  document.querySelectorAll('.task-item').forEach(item => {
+    const cb = item.querySelector('input[type=checkbox]');
+    const ph = item.dataset.phase;
+    total++;
+    if (cb.checked) done++;
+    else if (ph === 'prog') prog++;
+    else if (ph === 'gere') gere++;
+    else pend++;
+  });
+  const pct = Math.round(done/total*100);
+  document.getElementById('mainBar').style.width = pct+'%';
+  document.getElementById('pctLabel').textContent = pct+'%';
+  document.getElementById('chipDone').textContent = '✅ '+done+' completadas';
+  document.getElementById('chipProg').textContent = '🔵 '+prog+' en progreso';
+  document.getElementById('chipPend').textContent = '⚪ '+pend+' pendientes';
+  document.getElementById('chipGere').textContent = '⏳ '+gere+' esperando a Gere';
+
+  // mini counters per phase
+  for(let i=1;i<=8;i++){
+    const items = document.querySelectorAll(`#list${i} .task-item`);
+    const doneItems = [...items].filter(it=>it.querySelector('input').checked).length;
+    document.getElementById('mini'+i).textContent = `${doneItems}/${items.length}`;
+  }
+}
+
+// ────────────────────────────────────────────
+//  PHASE TOGGLE
+// ────────────────────────────────────────────
+function togglePhase(id) {
+  const hdr = document.querySelector(`#${id} .phase-header`);
+  const lst = document.querySelector(`#${id} .task-list`);
+  hdr.classList.toggle('open');
+  lst.classList.toggle('open');
+}
+
+// ────────────────────────────────────────────
+//  TABS
+// ────────────────────────────────────────────
+function showTab(name, btn) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ────────────────────────────────────────────
+//  COMMENTS
+// ────────────────────────────────────────────
+function loadComments() {
+  const comments = LS.get(KEY_COMMENTS) || getDefaultComments();
+  renderComments(comments);
+}
+
+function getDefaultComments() {
+  return [
+    {
+      id: Date.now()-3000,
+      author: 'claude',
+      ref: 'Sesión inicial — 19/05/2026',
+      text: 'Pipeline completo: descarga TROPOMI+GOSAT procesada, Tier 1 calculado (131 partidos), scatter plot y mapas coropléticos generados. Hallazgo clave: r = −0,58 entre XCH4 satelital y emisiones Tier 1 — correlación negativa explicada por fuentes no ganaderas en el AMBA. Este resultado es el aporte científico central del TIF.',
+      date: '19/05/2026'
+    },
+    {
+      id: Date.now()-2000,
+      author: 'claude',
+      ref: 'Reunión con Gere — 11/05/2026',
+      text: 'Gere aprobó la metodología tri-comparativa (Tier 1 / Tier 2 / Kriging-IDW). Pendiente: que Gere envíe (1) parámetros Tier 2 —GE y Ym por región/calidad de pastura— y (2) listado de partidos con sus mediciones empíricas propias (~10 partidos). El plan de tesis lo puede escribir en 3 horas una vez que tenga claros los insumos.',
+      date: '19/05/2026'
+    }
+  ];
+}
+
+function renderComments(comments) {
+  const container = document.getElementById('commentsList');
+  if (!comments || comments.length === 0) {
+    container.innerHTML = '<div class="empty-comments"><span>💬</span>Todavía no hay comentarios. ¡Agregá el primero!</div>';
+    return;
+  }
+  container.innerHTML = comments.map(c => {
+    const aClass = c.author==='jose' ? 'av-jose' : c.author==='claude' ? 'av-claude' : 'av-maxi';
+    const cClass = c.author==='jose' ? 'jose' : c.author==='claude' ? 'claude' : 'maxi';
+    const aLabel = c.author==='jose' ? 'J' : c.author==='claude' ? '🤖' : 'M';
+    const aName  = c.author==='jose' ? 'José Gere' : c.author==='claude' ? 'Claude' : 'Maxi';
+    return `<div class="comment-card ${cClass}">
+      <div class="comment-header">
+        <div class="avatar ${aClass}">${aLabel}</div>
+        <span class="comment-author">${aName}</span>
+        ${c.ref ? `<span class="comment-tag-label">${c.ref}</span>` : ''}
+        <span class="comment-time">${c.date}</span>
+        <button class="btn-del" onclick="deleteComment(${c.id})" title="Eliminar">×</button>
+      </div>
+      <div class="comment-body">${c.text.replace(/\n/g,'<br>')}</div>
+    </div>`;
+  }).reverse().join('');
+}
+
+function addComment() {
+  const author = document.getElementById('cmtAuthor').value;
+  const ref    = document.getElementById('cmtRef').value.trim();
+  const text   = document.getElementById('cmtText').value.trim();
+  if (!text) { alert('Escribí algo antes de agregar.'); return; }
+  const comments = LS.get(KEY_COMMENTS) || getDefaultComments();
+  comments.push({
+    id: Date.now(),
+    author, ref, text,
+    date: new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})
+  });
+  LS.set(KEY_COMMENTS, comments);
+  renderComments(comments);
+  document.getElementById('cmtText').value = '';
+  document.getElementById('cmtRef').value  = '';
+}
+
+function deleteComment(id) {
+  if (!confirm('¿Eliminar este comentario?')) return;
+  let comments = LS.get(KEY_COMMENTS) || [];
+  comments = comments.filter(c => c.id !== id);
+  LS.set(KEY_COMMENTS, comments);
+  renderComments(comments);
+}
+
+// ────────────────────────────────────────────
+//  INIT
+// ────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  loadTasks();
+  loadComments();
+  const lu = LS.get('tif_lastupdate') || new Date().toLocaleDateString('es-AR');
+  document.getElementById('lastUpdate').textContent = lu;
+  // open phase 1 by default
+  togglePhase('phase1');
+});
+</script>
+</body>
+</html>
