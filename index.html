@@ -209,7 +209,7 @@
       <div class="task-item" data-id="t1_6" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">Cálculo Tier 1 provisional — emisiones por partido</div><div class="task-note">Factor: 57 kg CH₄/cab/año (IPCC 2006, Tabla 10.10) · Total: 1.146.493 t CH₄/año · 28.662.320 t CO₂eq/año</div></div><span class="task-tag tag-done">✅ Listo</span></div>
       <div class="task-item" data-id="t1_7" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">Merge XCH4 satelital + Emisiones Tier 1 (131 partidos)</div><div class="task-note">emisiones_tier1_xch4_merged.csv · corrección de nombre "Coronel de Marina Leonardo Rosales"</div></div><span class="task-tag tag-done">✅ Listo</span></div>
       <div class="task-item" data-id="t1_8" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">Scatter plot XCH4 vs Emisiones Tier 1 generado</div><div class="task-note">r = −0,58 · r² = 0,34 · p = 2,6×10⁻¹³ · n = 131 partidos · correlación negativa explicada por fuentes urbanas</div></div><span class="task-tag tag-done">✅ Listo</span></div>
-      <div class="task-item" data-id="t1_9" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">Mapas coropléticos XCH4 y Tier 1 generados</div><div class="task-note">side-by-side · paleta YlOrRd (XCH4) y Blues (Tier 1) · exportados PNG 180 dpi</div></div><span class="task-tag tag-done">✅ Listo</span></div>
+      <div class="task-item" data-id="t1_9" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">Mapas coropléticos XCH4 y Tier 1 generados — 300 DPI con etiquetas</div><div class="task-note">mapa_xch4_300dpi.png (YlOrRd, AMBA etiquetado) · mapa_tier1_300dpi.png (Blues, pampa húmeda etiquetada) · mapas_4paneles_300dpi.png (4 variables, 4530×4888 px) · 19/05/2026</div></div><span class="task-tag tag-done">✅ Listo</span></div>
     </div>
   </div>
 
@@ -265,17 +265,17 @@
 
   <!-- FASE 5 -->
   <div class="phase-card" id="phase5">
-    <div class="phase-header pend-phase" onclick="togglePhase('phase5')">
+    <div class="phase-header prog-phase" onclick="togglePhase('phase5')">
       <span class="phase-icon">🗺️</span>
       <span class="phase-title">Fase 5 — QGIS y Mapas Finales</span>
-      <span class="phase-badge badge-pend">Pendiente</span>
+      <span class="phase-badge badge-prog">En progreso</span>
       <span class="phase-mini" id="mini5"></span>
       <span class="chevron">▼</span>
     </div>
     <div class="task-list" id="list5">
-      <div class="task-item" data-id="t5_1" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Merge QGIS: shapefile IGN + CSV XCH4 + CSV emisiones</div><div class="task-note">Join por nombre de partido · Capa unificada para todos los mapas</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
-      <div class="task-item" data-id="t5_2" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Mapa coroplético XCH4 final (QGIS)</div><div class="task-note">Simbología Graduada · campo xch4_mean · paleta YlOrRd · exportar imagen alta resolución</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
-      <div class="task-item" data-id="t5_3" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Mapa coroplético Tier 1 final (QGIS)</div><div class="task-note">Comparar visualmente con mapa XCH4 · misma escala geográfica</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
+      <div class="task-item" data-id="t5_1" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">Merge QGIS: shapefile IGN + CSV XCH4 + CSV emisiones</div><div class="task-note">TIF_capas_QGIS.shp · 135 partidos · EPSG:4326 · 10 campos (nam, xch4_ppb, em_t1_t, dens_em, dens_bov, etc.) · cargado en QGIS 3.40.5</div></div><span class="task-tag tag-done">✅ Listo</span></div>
+      <div class="task-item" data-id="t5_2" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">Mapa coroplético XCH4 final — 300 DPI con etiquetas AMBA</div><div class="task-note">mapa_xch4_300dpi.png · 2749×3267 px · YlOrRd cuantiles · partidos AMBA etiquetados con líderes (Lanús, Avellaneda, La Matanza, etc.) · 19/05/2026</div></div><span class="task-tag tag-done">✅ Listo</span></div>
+      <div class="task-item" data-id="t5_3" data-phase="done"><input type="checkbox"><div class="task-text"><div class="task-title">Mapa coroplético Tier 1 final — 300 DPI con etiquetas pampa húmeda</div><div class="task-note">mapa_tier1_300dpi.png · 2749×3267 px · Blues cuantiles · mayores emisores etiquetados (Ayacucho, Olavarría, Azul, Trenque Lauquen, etc.) · 19/05/2026</div></div><span class="task-tag tag-done">✅ Listo</span></div>
       <div class="task-item" data-id="t5_4" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Mapa coroplético Tier 2 (QGIS)</div><div class="task-note">Requiere datos de Gere primero</div></div><span class="task-tag tag-gere">⏳ Gere</span></div>
       <div class="task-item" data-id="t5_5" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Mapa Kriging / IDW — capa empírica interpolada (QGIS)</div><div class="task-note">Requiere listado de Gere · resultado: superficie continua de emisiones interpoladas</div></div><span class="task-tag tag-gere">⏳ Gere</span></div>
       <div class="task-item" data-id="t5_6" data-phase="pend"><input type="checkbox"><div class="task-text"><div class="task-title">Integrar datos climáticos SMN adicionales (12 estaciones)</div><div class="task-note">Normas climatológicas pendientes de integración al análisis</div></div><span class="task-tag tag-pend">⚪ Pendiente</span></div>
@@ -357,9 +357,9 @@
       <div class="tl-dot done"></div>
       <div class="tl-card done">
         <div class="tl-date">Mayo 2026</div>
-        <div class="tl-title">📡 Pipeline de datos completado — Reunión Gere 11/05/2026</div>
-        <div class="tl-desc">Se completó la descarga y procesamiento de TROPOMI+GOSAT, los cálculos Tier 1, el merge y los primeros mapas y scatter plot. Se aprobó la metodología tri-comparativa (Tier 1 / Tier 2 / Kriging-IDW).</div>
-        <div class="tl-tags"><span class="tl-tag completado">✅ Completado</span><span class="tl-tag reunion">Reunión con Gere</span></div>
+        <div class="tl-title">📡 Pipeline + QGIS completados — 19/05/2026</div>
+        <div class="tl-desc">Pipeline TROPOMI+GOSAT, cálculos Tier 1, merge y scatter plot completados (reunión Gere 11/05). QGIS: TIF_capas_QGIS.shp generado y cargado. Tres mapas exportados a 300 DPI con etiquetas de partidos clave: mapa XCH4 (AMBA) y mapa Tier 1 (pampa húmeda) + figura 4 paneles. Metodología tri-comparativa aprobada.</div>
+        <div class="tl-tags"><span class="tl-tag completado">✅ Completado</span><span class="tl-tag reunion">Reunión con Gere</span><span class="tl-tag entregable">Mapas 300 DPI</span></div>
       </div>
     </div>
 
@@ -478,7 +478,11 @@
     <ul>
       <li>emisiones_tier1_xch4_merged.csv — merge 131 partidos</li>
       <li>scatter_xch4_vs_tier1.png — con línea de tendencia, r², etiquetas</li>
-      <li>mapas_xch4_tier1.png — coropléticos side-by-side (180 dpi)</li>
+      <li>TIF_capas_QGIS.shp — shapefile unificado 135 partidos, EPSG:4326, 10 campos</li>
+      <li><strong>mapa_xch4_300dpi.png</strong> — XCH4 satelital · YlOrRd · etiquetas AMBA · 2749×3267 px · 300 DPI ✨</li>
+      <li><strong>mapa_tier1_300dpi.png</strong> — Emisiones Tier 1 · Blues · etiquetas pampa húmeda · 2749×3267 px · 300 DPI ✨</li>
+      <li><strong>mapas_4paneles_300dpi.png</strong> — 4 variables (XCH4, Tier1, densidad em., densidad ganadera) · 4530×4888 px · 300 DPI ✨</li>
+      <li>mapas_xch4_tier1.png — coropléticos side-by-side (180 dpi) — versión previa</li>
       <li>Datos_Bovinos_Bs_As_Combinados.xlsx — plantilla lista para Tier 2</li>
     </ul>
   </div>
@@ -630,9 +634,16 @@ function loadComments() {
 function getDefaultComments() {
   return [
     {
+      id: Date.now()-4000,
+      author: 'claude',
+      ref: 'Sesión QGIS — 19/05/2026',
+      text: 'Trabajo QGIS completado: (1) TIF_capas_QGIS.shp generado con 10 campos y 135 partidos cargado en QGIS 3.40.5 con simbología YlOrRd graduada sobre xch4_ppb. (2) Tres mapas de tesis exportados a 300 DPI con etiquetas selectivas: mapa_xch4_300dpi.png (AMBA etiquetada con líderes), mapa_tier1_300dpi.png (pampa húmeda etiquetada), mapas_4paneles_300dpi.png (4 variables, 4530×4888 px). Inversión espacial perfectamente visible: rojo oscuro AMBA en XCH4, azul oscuro SW en Tier 1 — el argumento visual central del capítulo de resultados.',
+      date: '19/05/2026'
+    },
+    {
       id: Date.now()-3000,
       author: 'claude',
-      ref: 'Sesión inicial — 19/05/2026',
+      ref: 'Sesión pipeline — 19/05/2026',
       text: 'Pipeline completo: descarga TROPOMI+GOSAT procesada, Tier 1 calculado (131 partidos), scatter plot y mapas coropléticos generados. Hallazgo clave: r = −0,58 entre XCH4 satelital y emisiones Tier 1 — correlación negativa explicada por fuentes no ganaderas en el AMBA. Este resultado es el aporte científico central del TIF.',
       date: '19/05/2026'
     },
